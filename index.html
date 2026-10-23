@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>MantenLibre · Planificación de mantenimiento</title>
+  <meta name="description" content="Planificador de mantenimiento libre y gratuito para pequeñas empresas y para enseñar gestión del mantenimiento.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231f6feb'/%3E%3Cpath d='M14.7 6.3a4 4 0 0 0-5.4 5.1l-4 4a1.4 1.4 0 0 0 2 2l4-4a4 4 0 0 0 5.1-5.4l-2.2 2.2-1.9-.5-.5-1.9z' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="lateral">
+      <div class="marca">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6"/><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1l-4 4a1.4 1.4 0 0 0 2 2l4-4a4 4 0 0 0 5.1-5.4l-2.2 2.2-1.9-.5-.5-1.9z"/></svg>
+        <div><strong>MantenLibre</strong><small id="nombreEmpresa"></small></div>
+        <button type="button" id="botonMenu" aria-label="Abrir menú">☰</button>
+      </div>
+      <nav id="menu">
+        <a href="#/panel" data-ruta="panel">Panel</a>
+        <a href="#/seguimiento" data-ruta="seguimiento">Seguimiento de OT</a>
+        <a href="#/ordenes" data-ruta="ordenes">Órdenes de trabajo <span class="cnt mal" id="cnt-ordenes"></span></a>
+        <a href="#/solicitudes" data-ruta="solicitudes">Solicitudes <span class="cnt" id="cnt-solicitudes"></span></a>
+        <a href="#/planes" data-ruta="planes">Planes preventivos</a>
+        <a href="#/calendario" data-ruta="calendario">Calendario</a>
+        <span class="grupo">Recursos</span>
+        <a href="#/activos" data-ruta="activos">Activos</a>
+        <a href="#/inventario" data-ruta="inventario">Inventario</a>
+        <a href="#/personal" data-ruta="personal">Personal</a>
+        <a href="#/ubicaciones" data-ruta="ubicaciones">Ubicaciones</a>
+        <span class="grupo">Análisis</span>
+        <a href="#/reportes" data-ruta="reportes">Reportes</a>
+        <a href="#/datos" data-ruta="datos">Datos y configuración</a>
+        <a href="#/guia" data-ruta="guia">Guía y ejercicios</a>
+      </nav>
+      <p class="pie">Software libre · datos solo en este navegador</p>
+    </aside>
+    <main id="vista"></main>
+  </div>
+  <dialog id="modal"><form id="modalForm"></form></dialog>
+  <div id="avisos" aria-live="polite"></div>
+
+  <script src="js/utilidades.js"></script>
+  <script src="js/datos.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/vistas.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
