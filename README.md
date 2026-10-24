@@ -1,9 +1,8 @@
 # MantenLibre
 
-Planificador de mantenimiento (CMMS ligero) **libre y gratuito**, pensado para:
-
-- **pequeñas empresas** que quieren dejar el papel y las hojas de cálculo sueltas;
-- **docentes y estudiantes** que practican gestión del mantenimiento con un escenario realista.
+Software de gestión del mantenimiento (CMMS) **libre y gratuito** para **pequeñas y medianas empresas** que quieren
+dejar el papel y las hojas de cálculo sueltas. Usa la terminología de **ISO 14224** y **EN 13306** (taxonomía de equipos,
+tipos de mantenimiento y datos de falla), lo que también lo hace útil como herramienta de formación.
 
 Es una página web estática: no necesita servidor, base de datos, cuentas ni instalación. Los datos se guardan
 **en el navegador de cada persona** y se pueden exportar e importar como archivo `.json`.
@@ -12,20 +11,21 @@ Es una página web estática: no necesita servidor, base de datos, cuentas ni in
 
 | Módulo | Qué hace |
 | --- | --- |
-| Panel | OT abiertas y vencidas, cumplimiento preventivo, MTTR, backlog, costo del mes, stock bajo, planificado vs correctivo |
+| Panel | Puesta en marcha guiada para empresas nuevas; OT abiertas y vencidas, cumplimiento preventivo, MTTR, backlog, costo del mes, stock bajo, planificado vs correctivo |
 | Seguimiento de OT | Tablero por estado (por hacer, en progreso, en espera, completadas) con avance de tareas, motivo de espera y botones para iniciar, pausar, reanudar y completar |
-| Órdenes de trabajo | Correctivas, preventivas, predictivas, inspecciones y mejoras; prioridad, responsable, lista de tareas, repuestos (descuentan stock), horas de mano de obra, costos en soles (PEN), cierre técnico (parada, modo de falla, causa raíz), bitácora con fecha y hora de cada evento y comentario; impresión con firmas |
+| Órdenes de trabajo | Correctivo (inmediato o diferido), preventivo predeterminado, preventivo basado en condición, inspección / prueba funcional y modificación; prioridad, responsable, lista de tareas, repuestos (descuentan stock), horas de mano de obra, costos en soles (PEN), cierre técnico ISO 14224 (actividad, parada, modo, severidad, mecanismo, causa y método de detección de la falla), bitácora con fecha y hora de cada evento; impresión con firmas |
 | Solicitudes | Cualquier persona reporta un problema; mantenimiento lo aprueba y se convierte en OT |
 | Planes preventivos | Por calendario (días, semanas, meses; fecha fija o flotante) o por horas de uso (horómetro). Generan OT automáticamente al acercarse el vencimiento |
 | Calendario | Órdenes por fecha y preventivos previstos a futuro |
-| Activos | Jerarquía (equipo → componente), ubicación, criticidad A/B/C, ficha técnica, horómetro, historial, MTBF/MTTR/disponibilidad por equipo |
+| Activos | Taxonomía ISO 14224 (sistema → unidad de equipo → subunidad → ítem mantenible), clase de equipo, ubicación técnica, criticidad A/B/C, ficha técnica, horómetro, historial, MTBF/MTTR/disponibilidad por equipo |
 | Inventario | Stock, mínimos, costo, valor del almacén, consumo de 90 días, entradas |
-| Personal y ubicaciones | Técnicos con costo por hora; áreas de la planta |
-| Reportes | Indicadores por activo, Pareto de modos de falla, costos por tipo de trabajo y explicación de cada fórmula |
-| Datos | Copia de seguridad JSON, exportación de OT a CSV (Excel), datos de ejemplo, configuración |
+| Personal y ubicaciones técnicas | Técnicos con costo por hora; sede, plantas y áreas (niveles 3–4 de ISO 14224) |
+| Reportes | Indicadores por activo, Pareto de fallas por modo, mecanismo, causa o método de detección, costos por tipo de trabajo y explicación de cada fórmula |
+| Datos | Copia de seguridad JSON, exportación de OT a CSV (Excel), configuración |
+| Guía y ejercicios | Flujo de trabajo, glosario ISO 14224 / EN 13306, datos de ejemplo y prácticas de formación |
 
-Incluye una **planta didáctica de ejemplo** (compresor, bomba, línea de envasado, caldera, montacargas…) con historial
-de fallas y una sección **Guía y ejercicios** con prácticas para clase.
+Para formación, la sección **Guía y ejercicios** incluye una planta de ejemplo con historial de fallas y una práctica
+guiada para armar el plan de mantenimiento de un mes (15 órdenes).
 
 ## Cómo usarla
 

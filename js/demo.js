@@ -3,11 +3,11 @@
 
 function cargarDemo() {
   state = estadoVacio();
-  state.config.empresa = 'Planta didáctica (ejemplo)';
+  state.config.empresa = 'Envasadora Andina (ejemplo)';
   const d = (n) => sumarDias(hoy(), n);
 
   const ubic = (nombre, descripcion) => {
-    const u = { id: uid(), nombre, descripcion };
+    const u = { id: uid(), nombre, descripcion, nivel: 'planta' };
     state.ubicaciones.push(u);
     return u.id;
   };
@@ -18,27 +18,27 @@ function cargarDemo() {
 
   const activo = (datos) => {
     const a = {
-      id: uid(), codigo: '', nombre: '', ubicacionId: '', padreId: '', categoria: '', criticidad: 'B',
+      id: uid(), codigo: '', nombre: '', ubicacionId: '', padreId: '', categoria: '', nivel: 'equipo', criticidad: 'B',
       estado: 'operativo', fabricante: '', modelo: '', serie: '', instalacion: '', horasDia: 16,
       horometro: null, notas: '', ...datos,
     };
     state.activos.push(a);
     return a.id;
   };
-  const cmp = activo({ codigo: 'CMP-01', nombre: 'Compresor de tornillo 30 kW', ubicacionId: uCmp, categoria: 'Neumática',
+  const cmp = activo({ codigo: 'CMP-01', nombre: 'Compresor de tornillo 30 kW', ubicacionId: uCmp, categoria: 'Compresores',
     criticidad: 'A', fabricante: 'Genérico', modelo: 'GT-30', serie: 'C30-1187', instalacion: '2019-03-12', horometro: 13820,
     notas: 'Alimenta toda la red de aire de la planta. Sin equipo de respaldo.' });
-  const bom = activo({ codigo: 'BC-01', nombre: 'Bomba centrífuga de agua de proceso', ubicacionId: uLin, categoria: 'Bombeo',
+  const bom = activo({ codigo: 'BC-01', nombre: 'Bomba centrífuga de agua de proceso', ubicacionId: uLin, categoria: 'Bombas',
     criticidad: 'A', fabricante: 'Genérico', modelo: 'CP 50-200', serie: 'B-55021', instalacion: '2020-07-01' });
-  const lin = activo({ codigo: 'LIN-01', nombre: 'Línea de envasado 1', ubicacionId: uLin, categoria: 'Línea de producción',
+  const lin = activo({ codigo: 'LIN-01', nombre: 'Línea de envasado 1', ubicacionId: uLin, categoria: 'Máquinas de producción', nivel: 'sistema',
     criticidad: 'A', instalacion: '2018-11-20' });
   const mot = activo({ codigo: 'MT-01', nombre: 'Motor de transportador 5,5 kW', ubicacionId: uLin, padreId: lin,
     categoria: 'Motores eléctricos', criticidad: 'B', fabricante: 'Genérico', modelo: 'IE3 132S', serie: 'M-77310' });
   const ll = activo({ codigo: 'LL-01', nombre: 'Llenadora rotativa 12 válvulas', ubicacionId: uLin, padreId: lin,
-    categoria: 'Envasado', criticidad: 'A', modelo: 'LR-12' });
-  const cal = activo({ codigo: 'CAL-01', nombre: 'Caldera pirotubular 500 kg/h', ubicacionId: uCal, categoria: 'Vapor',
+    categoria: 'Máquinas de producción', criticidad: 'A', modelo: 'LR-12' });
+  const cal = activo({ codigo: 'CAL-01', nombre: 'Caldera pirotubular 500 kg/h', ubicacionId: uCal, categoria: 'Calderas y hornos',
     criticidad: 'A', horasDia: 12, notas: 'Revisión anual obligatoria por normativa.' });
-  const mon = activo({ codigo: 'MON-01', nombre: 'Montacargas eléctrico 2,5 t', ubicacionId: uAlm, categoria: 'Logística',
+  const mon = activo({ codigo: 'MON-01', nombre: 'Montacargas eléctrico 2,5 t', ubicacionId: uAlm, categoria: 'Vehículos y montacargas',
     criticidad: 'C', horasDia: 8, horometro: 3260 });
 
   const persona = (nombre, especialidad, costoH, contacto) => {
@@ -97,27 +97,27 @@ function cargarDemo() {
   const historia = (datos) => crearOT({ estado: 'completada', prioridad: 'alta', ...datos });
 
   historia({ titulo: 'Fuga por sello mecánico', activoId: bom, creada: d(-75), fechaLimite: d(-74), cerrada: d(-74),
-    asignadoId: ana, paradaH: 6, modoFalla: 'Desgaste', causa: 'Sello al final de su vida útil; caras con rayado.',
+    asignadoId: ana, paradaH: 6, modalidad: 'inmediato', actividad: 'Reemplazar', modoFalla: 'Fuga externa de fluido de proceso (ELP)', severidad: 'degradada', mecanismo: 'Material · Desgaste', causaCat: 'Operación / mantenimiento · Desgaste esperado', deteccion: 'Observación casual', causa: 'Sello al final de su vida útil; caras con rayado.',
     repuestos: [usar(sello, 1)], mano: [mano(ana, 5, d(-74))] });
   historia({ titulo: 'Rodamiento ruidoso lado acople', activoId: mot, creada: d(-50), fechaLimite: d(-49), cerrada: d(-49),
-    asignadoId: ana, paradaH: 3, modoFalla: 'Lubricación deficiente', causa: 'Grasa endurecida, intervalo de lubricación no respetado.',
+    asignadoId: ana, paradaH: 3, modalidad: 'diferido', actividad: 'Reemplazar', modoFalla: 'Ruido (NOI)', severidad: 'degradada', mecanismo: 'Material · Desgaste', causaCat: 'Operación / mantenimiento · Error de mantenimiento', deteccion: 'Inspección', causa: 'Grasa endurecida, intervalo de lubricación no respetado.',
     repuestos: [usar(rod, 2), usar(grasa, 0.2)], mano: [mano(ana, 3, d(-49))] });
   historia({ titulo: 'Disparo por alta temperatura', activoId: cmp, creada: d(-35), fechaLimite: d(-35), cerrada: d(-35),
-    asignadoId: luis, paradaH: 4, modoFalla: 'Contaminación / suciedad', causa: 'Radiador de aceite obstruido por polvo.',
+    asignadoId: luis, paradaH: 4, modalidad: 'inmediato', actividad: 'Servicio (lubricar, limpiar)', modoFalla: 'Parada espuria / inesperada (UST)', severidad: 'critica', mecanismo: 'Influencia externa · Contaminación', causaCat: 'Operación / mantenimiento · Error de mantenimiento', deteccion: 'Interferencia con la producción', causa: 'Radiador de aceite obstruido por polvo.',
     mano: [mano(luis, 2, d(-35)), mano(carla, 2, d(-35))], prioridad: 'urgente' });
   historia({ titulo: 'Atasco en estrella de llenado', activoId: ll, creada: d(-20), fechaLimite: d(-20), cerrada: d(-20),
-    asignadoId: carla, paradaH: 1.5, modoFalla: 'Error de operación', causa: 'Formato de botella cambiado sin ajustar guías.',
+    asignadoId: carla, paradaH: 1.5, modalidad: 'inmediato', actividad: 'Ajustar', modoFalla: 'Parada espuria / inesperada (UST)', severidad: 'critica', mecanismo: 'Mecánico · Atascamiento / agarrotamiento', causaCat: 'Operación / mantenimiento · Error de operación', deteccion: 'Interferencia con la producción', causa: 'Formato de botella cambiado sin ajustar guías.',
     mano: [mano(carla, 1.5, d(-20))] });
   historia({ titulo: 'Correa del transportador patinando', activoId: mot, creada: d(-15), fechaLimite: d(-14), cerrada: d(-14),
-    asignadoId: ana, paradaH: 1, modoFalla: 'Desgaste', causa: 'Correa estirada y cristalizada.',
+    asignadoId: ana, paradaH: 1, modalidad: 'diferido', actividad: 'Reemplazar', modoFalla: 'Rendimiento bajo (LOO)', severidad: 'degradada', mecanismo: 'Material · Desgaste', causaCat: 'Operación / mantenimiento · Desgaste esperado', deteccion: 'Inspección', causa: 'Correa estirada y cristalizada.',
     repuestos: [usar(correa, 1)], mano: [mano(ana, 1, d(-14))], prioridad: 'media' });
   historia({ titulo: 'Sensor de nivel no detecta', activoId: ll, creada: d(-8), fechaLimite: d(-8), cerrada: d(-8),
-    asignadoId: luis, paradaH: 2, modoFalla: 'Falla eléctrica', causa: 'Conector del sensor sulfatado.',
+    asignadoId: luis, paradaH: 2, modalidad: 'inmediato', actividad: 'Reparar', modoFalla: 'Lectura anormal de instrumento (AIR)', severidad: 'degradada', mecanismo: 'Material · Corrosión', causaCat: 'Diseño · Material inadecuado', deteccion: 'Interferencia con la producción', causa: 'Conector del sensor sulfatado.',
     mano: [mano(luis, 2, d(-8))] });
 
   const prevHecha = (p, limite, cierre, persona, horas) => crearOT({
     titulo: p.nombre, tipo: p.tipo, activoId: p.activoId, planId: p.id, creada: sumarDias(limite, -7), fechaLimite: limite,
-    cerrada: cierre, estado: 'completada', asignadoId: persona, estimadoH: p.estimadoH,
+    cerrada: cierre, estado: 'completada', asignadoId: persona, actividad: p.tipo === 'inspeccion' ? 'Inspección' : 'Servicio (lubricar, limpiar)', estimadoH: p.estimadoH,
     checklist: p.checklist.map((t) => ({ t, ok: true })), mano: [mano(persona, horas, cierre)],
   });
   prevHecha(pLub, d(-40), d(-38), carla, 0.5);
@@ -126,7 +126,7 @@ function cargarDemo() {
   prevHecha(pBom, d(-70), d(-71), ana, 1);
   prevHecha(pBom, d(-40), d(-37), ana, 1.5);
 
-  const enCurso = crearOT({ titulo: 'Ruido anormal en reductor del transportador', tipo: 'correctiva', prioridad: 'alta',
+  const enCurso = crearOT({ titulo: 'Ruido anormal en reductor del transportador', tipo: 'correctiva', modalidad: 'diferido', prioridad: 'alta',
     estado: 'progreso', activoId: mot, asignadoId: ana, creada: d(-2), fechaLimite: d(1), estimadoH: 3, inicioReal: d(-1) + 'T09:15',
     descripcion: 'El operador reporta golpeteo intermitente al arrancar la línea.',
     checklist: [{ t: 'Bloquear y etiquetar (LOTO)', ok: true }, { t: 'Revisar nivel y estado del aceite', ok: true },

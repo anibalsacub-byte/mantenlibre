@@ -107,7 +107,8 @@ const lineas = (texto) => (texto || '').split('\n').map((t) => t.trim()).filter(
 
 const camposOT = (nueva) => [
   { k: 'titulo', label: 'Título', req: true, full: true, ph: 'Ej.: Cambiar rodamiento lado acople' },
-  { k: 'tipo', label: 'Tipo', type: 'select', options: TIPOS },
+  { k: 'tipo', label: 'Tipo de mantenimiento', type: 'select', options: TIPOS },
+  { k: 'modalidad', label: 'Correctivo', type: 'select', options: MODALIDAD_CORRECTIVO, def: 'diferido', si: 'tipo=correctiva' },
   { k: 'prioridad', label: 'Prioridad', type: 'select', options: PRIORIDADES },
   { k: 'activoId', label: 'Activo', type: 'select', options: opcActivos, vacio: 'Sin activo' },
   { k: 'asignadoId', label: 'Responsable', type: 'select', options: opcPersonal, vacio: 'Sin asignar' },
@@ -123,10 +124,12 @@ const camposOT = (nueva) => [
 const camposActivo = (actual) => [
   { k: 'codigo', label: 'Código', ph: 'Ej.: BC-02' },
   { k: 'nombre', label: 'Nombre', req: true },
-  { k: 'ubicacionId', label: 'Ubicación', type: 'select', options: opcUbicaciones, vacio: 'Sin ubicación' },
+  { k: 'ubicacionId', label: 'Ubicación técnica', type: 'select', options: opcUbicaciones, vacio: 'Sin ubicación' },
+  { k: 'nivel', label: 'Nivel taxonómico (ISO 14224)', type: 'select', options: NIVELES, def: 'equipo' },
   { k: 'padreId', label: 'Forma parte de', type: 'select', vacio: 'Ninguno (activo principal)',
     options: () => opcActivos().filter(([id]) => id !== actual?.id) },
-  { k: 'categoria', label: 'Categoría', ph: 'Motores, bombeo, HVAC…' },
+  { k: 'categoria', label: 'Clase de equipo (ISO 14224)', type: 'select', vacio: 'Elegir…',
+    options: () => (actual?.categoria && !CLASES_EQUIPO.includes(actual.categoria) ? [actual.categoria] : []).concat(CLASES_EQUIPO) },
   { k: 'criticidad', label: 'Criticidad', type: 'select', options: CRITICIDAD, def: 'B' },
   { k: 'estado', label: 'Estado', type: 'select', options: ESTADOS_ACTIVO },
   { k: 'fabricante', label: 'Fabricante' },
@@ -143,7 +146,8 @@ const camposActivo = (actual) => [
 const camposPlan = () => [
   { k: 'nombre', label: 'Nombre del plan', req: true, full: true, ph: 'Ej.: Lubricación semanal de rodamientos' },
   { k: 'activoId', label: 'Activo', type: 'select', options: opcActivos, req: true, vacio: 'Elegir…' },
-  { k: 'tipo', label: 'Tipo', type: 'select', options: { preventiva: 'Preventiva', predictiva: 'Predictiva', inspeccion: 'Inspección' } },
+  { k: 'tipo', label: 'Tipo de mantenimiento', type: 'select',
+    options: { preventiva: TIPOS.preventiva, predictiva: TIPOS.predictiva, inspeccion: TIPOS.inspeccion } },
   { k: 'disparo', label: 'Se programa', type: 'select', options: { tiempo: 'Por calendario', medidor: 'Por horas de uso (horómetro)' } },
   { k: 'prioridad', label: 'Prioridad', type: 'select', options: PRIORIDADES, def: 'media' },
   { k: 'cada', label: 'Cada', type: 'number', min: 1, step: 1, def: 1, si: 'disparo=tiempo', req: true },
@@ -178,6 +182,8 @@ const camposPersona = [
 ];
 const camposUbicacion = [
   { k: 'nombre', label: 'Nombre', req: true },
+  { k: 'nivel', label: 'Nivel (ISO 14224)', type: 'select', def: 'planta',
+    options: { instalacion: 'Instalación / sede (nivel 3)', planta: 'Planta / área / línea (nivel 4)' } },
   { k: 'descripcion', label: 'Descripción', type: 'textarea', full: true },
 ];
 const camposSolicitud = [
@@ -284,24 +290,36 @@ const acciones = {
     const pendientes = o.checklist.filter((x) => !x.ok).length;
     if (pendientes && !confirm(`Quedan ${pendientes} tareas sin marcar. ¿Completar de todas formas?`)) return;
     const a = porId('activos', o.activoId);
+    const correctivo = o.tipo === 'correctiva';
+    // Los datos de falla (ISO 14224) son obligatorios en correctivos; en el resto solo si se halló una falla.
+    const datoFalla = (k, label, options, ayuda) =>
+      ({ k, label, type: 'select', options, req: correctivo, vacio: correctivo ? 'Elegir…' : 'No aplica', ayuda });
     const campos = [
       { k: 'cerrada', label: 'Fecha de cierre', type: 'date', def: hoy(), req: true },
+      { k: 'actividad', label: 'Actividad realizada', type: 'select', options: ACTIVIDADES, req: true, vacio: 'Elegir…',
+        def: { preventiva: 'Servicio (lubricar, limpiar)', inspeccion: 'Inspección', predictiva: 'Verificar', mejora: 'Modificar' }[o.tipo] },
       { k: 'paradaH', label: 'Tiempo de parada del equipo (h)', type: 'number', step: 0.25, min: 0,
-        ayuda: 'Horas que el equipo no pudo operar por este trabajo. Clave para MTTR y disponibilidad.' },
-      { k: 'modoFalla', label: 'Modo de falla', type: 'select', options: MODOS_FALLA, vacio: o.tipo === 'correctiva' ? 'Elegir…' : 'No aplica' },
+        ayuda: 'Horas que el equipo no pudo operar. Clave para MTTR y disponibilidad.' },
       ...(a && a.horometro != null ? [{ k: 'lecturaCierre', label: 'Lectura del horómetro (h)', type: 'number', min: 0, step: 1, def: a.horometro }] : []),
-      { k: 'causa', label: 'Causa raíz / hallazgos', type: 'textarea', full: true },
+      datoFalla('modoFalla', 'Modo de falla', MODOS_FALLA, 'Lo que se observó: el síntoma.'),
+      datoFalla('severidad', 'Severidad de la falla', SEVERIDAD),
+      datoFalla('mecanismo', 'Mecanismo de falla', MECANISMOS, 'El proceso físico que produjo la falla.'),
+      datoFalla('causaCat', 'Causa de la falla', CAUSAS, 'Por qué ocurrió: origen en diseño, instalación, operación…'),
+      datoFalla('deteccion', 'Método de detección', DETECCION),
+      { k: 'causa', label: 'Descripción de la causa raíz y hallazgos', type: 'textarea', full: true },
       { k: 'notas', label: 'Notas de cierre', type: 'textarea', full: true },
     ];
     abrirFormulario({
       titulo: 'Completar ' + o.num, campos, obj: o, textoGuardar: 'Completar orden',
-      intro: o.mano.length ? '' : 'Consejo: registra las horas de mano de obra antes de cerrar para que el costo quede completo.',
+      intro: (correctivo ? 'Registro de falla según ISO 14224 (Anexo B). ' : '') +
+        (o.mano.length ? '' : 'Registra las horas de mano de obra antes de cerrar para que el costo quede completo.'),
       alGuardar(d) {
         const { cerrada, ...resto } = d;
         Object.assign(o, resto);
         if (a && d.lecturaCierre != null && d.lecturaCierre > (a.horometro ?? 0)) a.horometro = d.lecturaCierre;
         o.finReal = ahora();
-        registrar(o, 'Completada' + (d.paradaH ? ` · ${fNum(d.paradaH, 2)} h de parada` : '') + (d.modoFalla ? ' · ' + d.modoFalla : ''), 'fin');
+        registrar(o, ['Completada', d.actividad, d.paradaH ? `${fNum(d.paradaH, 2)} h de parada` : '', d.modoFalla]
+          .filter(Boolean).join(' · '), 'fin');
         cerrarOT(o, 'completada', cerrada);
         const nuevas = generarPreventivos();
         if (nuevas.length) aviso(`Se generó ${nuevas.map((x) => x.num).join(', ')} para el siguiente ciclo.`, 'info');
@@ -483,6 +501,8 @@ const acciones = {
       alEliminar: () => (state.ubicaciones = state.ubicaciones.filter((x) => x !== u)) });
   },
 
+  ocultarPuesta() { state.config.ocultarPuesta = true; refrescar(); },
+
   // Calendario
   mesAnterior() { moverMes(-1); },
   mesSiguiente() { moverMes(1); },
@@ -501,12 +521,12 @@ const acciones = {
   },
   exportarCSV() {
     const cab = ['Nº', 'Título', 'Tipo', 'Prioridad', 'Estado', 'Activo', 'Responsable', 'Creada', 'Fecha límite', 'Cerrada',
-      'Horas estimadas', 'Horas reales', 'Parada (h)', 'Modo de falla', 'Costo repuestos', 'Costo mano de obra', 'Otros', 'Total'];
+      'Horas estimadas', 'Horas reales', 'Actividad', 'Parada (h)', 'Modo de falla', 'Severidad', 'Mecanismo', 'Causa', 'Detección', 'Costo repuestos', 'Costo mano de obra', 'Otros', 'Total'];
     const celda = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const filas = state.ordenes.map((o) => {
       const c = costoOT(o);
       return [o.num, o.titulo, TIPOS[o.tipo], PRIORIDADES[o.prioridad], ESTADOS[o.estado], etiquetaActivo(o.activoId),
-        nombreDe('personal', o.asignadoId), o.creada, o.fechaLimite, o.cerrada, o.estimadoH, horasMano(o), o.paradaH, o.modoFalla,
+        nombreDe('personal', o.asignadoId), o.creada, o.fechaLimite, o.cerrada, o.estimadoH, horasMano(o), o.actividad, o.paradaH, o.modoFalla, SEVERIDAD[o.severidad] ?? '', o.mecanismo, o.causaCat, o.deteccion,
         c.repuestos.toFixed(2), c.mano.toFixed(2), c.otros.toFixed(2), c.total.toFixed(2)].map(celda).join(';');
     });
     descargar(`ordenes-${hoy()}.csv`, '﻿' + [cab.map(celda).join(';'), ...filas].join('\r\n'), 'text/csv;charset=utf-8');

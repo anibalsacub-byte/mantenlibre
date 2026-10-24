@@ -7,7 +7,7 @@ const filtros = {
   act: { q: '', ubic: '' },
   inv: { q: '', bajo: '' },
   cal: { mes: '' },
-  rep: { dias: '90' },
+  rep: { dias: '90', eje: 'modoFalla' },
 };
 
 // ---------- Piezas comunes ----------
@@ -73,7 +73,7 @@ function filaOT(o, cols = 'completa') {
     return `<tr class="clic" data-ir="#/ot/${o.id}">${base}<td>${esc(etiquetaActivo(o.activoId))}</td><td>${fechaLimiteHTML(o)}</td></tr>`;
   }
   return `<tr class="clic" data-ir="#/ot/${o.id}">${base}
-    <td>${esc(etiquetaActivo(o.activoId))}</td><td>${TIPOS[o.tipo]}</td><td>${badgePrioridad(o)}</td>
+    <td>${esc(etiquetaActivo(o.activoId))}</td><td>${TIPOS_CORTOS[o.tipo]}</td><td>${badgePrioridad(o)}</td>
     <td>${badgeEstado(o)}</td><td>${esc(nombreDe('personal', o.asignadoId))}</td>
     <td>${o.estado === 'completada' ? fFecha(o.cerrada) : fechaLimiteHTML(o)}</td></tr>`;
 }
@@ -81,23 +81,47 @@ const CAB_OT = ['Nº', 'Título', 'Activo', 'Tipo', 'Prioridad', 'Estado', 'Resp
 
 // ---------- Panel ----------
 
-function bienvenida() {
-  return `${cabecera('Bienvenido a MantenLibre', 'Planificación de mantenimiento libre y gratuita')}
-  <section class="tarjeta bienvenida">
-    <p>Organiza activos, órdenes de trabajo, planes preventivos, repuestos y personal. Todo se guarda
-    <strong>en este navegador</strong>: no hay cuentas ni servidor. Haz copias de seguridad desde «Datos».</p>
-    <div class="opciones">
-      <div><h3>Practicar con un ejemplo</h3><p>Carga una planta didáctica de envasado con equipos, historial de fallas,
-      planes y repuestos. Ideal para clases.</p>${btn('cargarDemo', 'Cargar datos de ejemplo', '', 'prim')}</div>
-      <div><h3>Empezar con mi empresa</h3><p>Registra primero tus ubicaciones y activos; después crea planes
-      preventivos y órdenes de trabajo.</p>${btn('nuevoActivo', 'Registrar el primer activo')}</div>
-    </div>
-    <p class="sub">¿Primera vez? Lee la <a href="#/guia">guía y ejercicios</a>.</p>
+// Puesta en marcha en el orden que recomiendan las guías de implantación de un CMMS:
+// estructura (ubicaciones y activos críticos) → recursos → preventivos → ciclo completo de una OT.
+function pasosPuestaEnMarcha() {
+  return [
+    { ok: state.config.empresa !== 'Mi empresa', t: 'Datos de la empresa', d: 'Nombre y horizonte de programación de preventivos.', acc: 'editarConfig', b: 'Configurar' },
+    { ok: state.ubicaciones.length > 0, t: 'Ubicaciones técnicas', d: 'Sede, planta, áreas o líneas (niveles 3–4 de ISO 14224).', acc: 'nuevaUbicacion', b: 'Agregar ubicación' },
+    { ok: state.activos.length > 0, t: 'Activos críticos', d: 'Empieza por los equipos cuya falla para la producción o afecta la seguridad.', acc: 'nuevoActivo', b: 'Agregar activo' },
+    { ok: state.personal.length > 0, t: 'Personal técnico', d: 'Técnicos y su costo por hora para costear la mano de obra.', acc: 'nuevaPersona', b: 'Agregar persona' },
+    { ok: state.repuestos.length > 0, t: 'Repuestos críticos', d: 'Repuestos de los equipos críticos con su stock mínimo.', acc: 'nuevoRepuesto', b: 'Agregar repuesto' },
+    { ok: state.planes.length > 0, t: 'Planes preventivos', d: 'Rutinas por calendario u horómetro, primero para los equipos críticos.', acc: 'nuevoPlan', b: 'Crear plan' },
+    { ok: state.ordenes.some((o) => o.estado === 'completada'), t: 'Primera orden cerrada', d: 'Crea, ejecuta y cierra una OT para validar el ciclo completo.', acc: 'nuevaOT', b: 'Crear OT' },
+  ];
+}
+
+function tarjetaPuestaEnMarcha(compacta) {
+  const pasos = pasosPuestaEnMarcha();
+  const hechos = pasos.filter((p) => p.ok).length;
+  const siguiente = pasos.find((p) => !p.ok);
+  return `<section class="tarjeta puesta">
+    <header class="puesta-cab">
+      <div><h2>Puesta en marcha · ${hechos} de ${pasos.length}</h2>
+        <p class="sub">Configura MantenLibre para tu empresa en este orden.</p></div>
+      ${compacta ? btn('ocultarPuesta', 'Ocultar', '', 'mini-btn noimprimir') : ''}
+    </header>
+    ${progreso(hechos / pasos.length)}
+    <ol class="pasos">${pasos.map((p) => `<li class="${p.ok ? 'hecho' : p === siguiente ? 'actual' : ''}">
+      <span class="marca-paso" aria-hidden="true">${p.ok ? '✓' : ''}</span>
+      <div><strong>${p.t}</strong><small>${p.d}</small></div>
+      ${p.ok ? '' : btn(p.acc, p.b, '', p === siguiente ? 'prim mini-btn' : 'mini-btn')}</li>`).join('')}</ol>
   </section>`;
 }
 
+function inicioVacio() {
+  return `${cabecera('Bienvenido a MantenLibre', 'Software libre de gestión del mantenimiento para pequeñas y medianas empresas')}
+  ${tarjetaPuestaEnMarcha(false)}
+  <p class="sub">Los datos se guardan en este navegador; exporta copias de seguridad desde «Datos y configuración».
+  ¿Quieres explorar antes con datos de ejemplo? Están en <a href="#/guia">Guía y ejercicios</a>.</p>`;
+}
+
 function vistaPanel() {
-  if (!hayDatos()) return bienvenida();
+  if (!hayDatos()) return inicioVacio();
   const t = hoy();
   const abiertas = state.ordenes.filter(abierta);
   const venc = abiertas.filter(vencida).sort(ordenOT);
@@ -115,6 +139,7 @@ function vistaPanel() {
   return `${cabecera('Panel', esc(state.config.empresa) + ' · ' + fFecha(t),
     '<a class="boton" href="#/seguimiento">Ver seguimiento</a>' + btn('nuevaSolicitud', '+ Solicitud') +
     btn('nuevaOT', '+ Orden de trabajo', '', 'prim'))}
+  ${!state.config.ocultarPuesta && pasosPuestaEnMarcha().some((p) => !p.ok) ? tarjetaPuestaEnMarcha(true) : ''}
   <section class="kpis">
     ${kpi('OT abiertas', abiertas.length, `${venc.length} vencidas`, venc.length ? 'mal' : '')}
     ${kpi('Cumplimiento preventivo', fPct(cumpl.ratio), `${cumpl.cumplidas} de ${cumpl.total} a tiempo · 90 días`,
@@ -254,7 +279,7 @@ function vistaOT(id) {
   ].join('');
 
   return `<div class="solo-imprimir membrete"><strong>${esc(state.config.empresa)}</strong><span>Orden de trabajo</span></div>
-  ${cabecera(`${o.num} · ${o.titulo}`, `${badgeEstado(o)} ${badgePrioridad(o)} ${badge(TIPOS[o.tipo], 'neutro')}`, botones)}
+  ${cabecera(`${o.num} · ${o.titulo}`, `${badgeEstado(o)} ${badgePrioridad(o)} ${badge(TIPOS[o.tipo] + (o.tipo === 'correctiva' && o.modalidad ? ' ' + o.modalidad : ''), 'neutro')}`, botones)}
   <section class="rejilla2">
     <div class="tarjeta">
       <h2>Datos</h2>
@@ -322,13 +347,18 @@ function vistaOT(id) {
 
   <section class="rejilla2">
     <div class="tarjeta">
-      <h2>Cierre técnico</h2>
+      <h2>Cierre técnico <small>ISO 14224</small></h2>
       ${o.estado === 'completada' ? `<dl class="datos">
+        <dt>Actividad</dt><dd>${esc(o.actividad || '—')}</dd>
         <dt>Tiempo de parada</dt><dd>${o.paradaH == null ? '—' : fNum(o.paradaH, 2) + ' h'}</dd>
         <dt>Modo de falla</dt><dd>${esc(o.modoFalla || '—')}</dd>
-        <dt>Causa raíz</dt><dd>${esc(o.causa || '—')}</dd>
+        <dt>Severidad</dt><dd>${esc(SEVERIDAD[o.severidad] || '—')}</dd>
+        <dt>Mecanismo</dt><dd>${esc(o.mecanismo || '—')}</dd>
+        <dt>Causa</dt><dd>${esc(o.causaCat || '—')}</dd>
+        <dt>Detección</dt><dd>${esc(o.deteccion || '—')}</dd>
+        <dt>Causa raíz y hallazgos</dt><dd>${esc(o.causa || '—')}</dd>
         <dt>Lectura de horómetro</dt><dd>${o.lecturaCierre == null ? '—' : fNum(o.lecturaCierre, 0) + ' h'}</dd>
-      </dl>` : '<p class="vacio">Se completa al cerrar la orden: tiempo de parada, modo de falla y causa raíz.</p>'}
+      </dl>` : '<p class="vacio">Se completa al cerrar la orden: actividad, parada y, si hubo falla, modo, mecanismo, causa y método de detección.</p>'}
     </div>
     <div class="tarjeta">
       <h2>Costos</h2>
@@ -398,7 +428,7 @@ function vistaPlanes() {
       const proximo = p.disparo === 'medidor' ? `${fNum(proximaLectura(p), 0)} h` : fFecha(proximaFecha(p));
       return `<tr class="clic" data-acc="editarPlan" data-id="${p.id}"><td><strong>${esc(p.nombre)}</strong>
         <small class="bloque">${p.checklist.length} tareas · ${fNum(p.estimadoH)} h estimadas</small></td>
-        <td>${esc(etiquetaActivo(p.activoId))}</td><td>${TIPOS[p.tipo]}</td><td>${frecuenciaTexto(p)}
+        <td>${esc(etiquetaActivo(p.activoId))}</td><td>${TIPOS_CORTOS[p.tipo]}</td><td>${frecuenciaTexto(p)}
         ${p.disparo === 'tiempo' ? `<small class="bloque">${p.base === 'cierre' ? 'flotante' : 'fecha fija'}</small>` : ''}</td>
         <td>${proximo}</td><td>${situacionPlan(p)}</td><td>${esc(nombreDe('personal', p.responsableId))}</td>
         <td class="acciones">${btn('generarAhora', 'Generar OT ahora', p.id, 'mini-btn')}</td></tr>`;
@@ -467,12 +497,12 @@ function vistaActivos() {
   const lista = state.activos.filter((a) => (!f.ubic || a.ubicacionId === f.ubic) &&
     (!q || `${a.codigo} ${a.nombre} ${a.categoria} ${a.fabricante} ${a.modelo}`.toLowerCase().includes(q)))
     .sort((a, b) => (a.codigo || a.nombre).localeCompare(b.codigo || b.nombre));
-  return `${cabecera('Activos', 'Equipos e instalaciones que se mantienen.', btn('nuevoActivo', '+ Nuevo activo', '', 'prim'))}
+  return `${cabecera('Activos', 'Jerarquía de equipos según la taxonomía ISO 14224 (sistema → equipo → subunidad → ítem mantenible).', btn('nuevoActivo', '+ Nuevo activo', '', 'prim'))}
   <div class="filtros">
-    ${selFiltro('act.ubic', [['', 'Todas'], ...opcUbicaciones()], f.ubic, 'Ubicación')}
+    ${selFiltro('act.ubic', [['', 'Todas'], ...opcUbicaciones()], f.ubic, 'Ubicación técnica')}
     ${buscador('act.q', f.q, 'Código, nombre, modelo…')}
   </div>
-  <section class="tarjeta">${tabla(['Código', 'Nombre', 'Ubicación', 'Categoría', 'Criticidad', 'Estado', 'Horómetro', 'OT abiertas'],
+  <section class="tarjeta">${tabla(['Código', 'Nombre', 'Ubicación técnica', 'Clase de equipo', 'Criticidad', 'Estado', 'Horómetro', 'OT abiertas'],
     lista.map((a) => {
       const padre = porId('activos', a.padreId);
       const nAb = state.ordenes.filter((o) => o.activoId === a.id && abierta(o)).length;
@@ -506,9 +536,10 @@ function vistaActivo(id) {
   <section class="rejilla2">
     <div class="tarjeta"><h2>Ficha técnica</h2>
       <dl class="datos">
-        <dt>Ubicación</dt><dd>${esc(nombreDe('ubicaciones', a.ubicacionId))}</dd>
+        <dt>Ubicación técnica</dt><dd>${esc(nombreDe('ubicaciones', a.ubicacionId))}</dd>
         <dt>Forma parte de</dt><dd>${padre ? `<a href="#/activo/${padre.id}">${esc(etiquetaActivo(padre.id))}</a>` : '—'}</dd>
-        <dt>Categoría</dt><dd>${esc(a.categoria || '—')}</dd>
+        <dt>Clase de equipo</dt><dd>${esc(a.categoria || '—')}</dd>
+        <dt>Nivel taxonómico</dt><dd>${esc(NIVELES[a.nivel] || '—')}</dd>
         <dt>Fabricante / modelo</dt><dd>${esc([a.fabricante, a.modelo].filter(Boolean).join(' · ') || '—')}</dd>
         <dt>Nº de serie</dt><dd>${esc(a.serie || '—')}</dd>
         <dt>Instalación</dt><dd>${fFecha(a.instalacion)}</dd>
@@ -570,9 +601,12 @@ function vistaPersonal() {
 }
 
 function vistaUbicaciones() {
-  return `${cabecera('Ubicaciones', 'Áreas, edificios o líneas donde están los activos.', btn('nuevaUbicacion', '+ Nueva ubicación', '', 'prim'))}
-  <section class="tarjeta">${tabla(['Nombre', 'Descripción', 'Activos'], state.ubicaciones.map((u) =>
-    `<tr class="clic" data-acc="editarUbicacion" data-id="${u.id}"><td><strong>${esc(u.nombre)}</strong></td><td>${esc(u.descripcion || '—')}</td>
+  const niveles = { instalacion: 'Instalación / sede', planta: 'Planta / área / línea' };
+  return `${cabecera('Ubicaciones técnicas', 'Sede, plantas, áreas o líneas donde están los activos (niveles 3–4 de ISO 14224).',
+    btn('nuevaUbicacion', '+ Nueva ubicación', '', 'prim'))}
+  <section class="tarjeta">${tabla(['Nombre', 'Nivel', 'Descripción', 'Activos'], state.ubicaciones.map((u) =>
+    `<tr class="clic" data-acc="editarUbicacion" data-id="${u.id}"><td><strong>${esc(u.nombre)}</strong></td>
+      <td>${esc(niveles[u.nivel] || '—')}</td><td>${esc(u.descripcion || '—')}</td>
       <td>${state.activos.filter((a) => a.ubicacionId === u.id).length}</td></tr>`), 'Aún no hay ubicaciones.')}</section>`;
 }
 
@@ -585,9 +619,11 @@ function vistaReportes() {
     .sort((x, y) => y.k.costo - x.k.costo || y.k.fallas - x.k.fallas);
 
   const fallas = fallasCerradas(desde);
+  const ejes = { modoFalla: 'Modo de falla', mecanismo: 'Mecanismo de falla', causaCat: 'Causa de la falla', deteccion: 'Método de detección' };
+  const eje = filtros.rep.eje;
   const modos = {};
   for (const o of fallas) {
-    const m = o.modoFalla || 'Sin clasificar';
+    const m = o[eje] || 'Sin clasificar';
     modos[m] ??= { n: 0, h: 0 };
     modos[m].n += 1;
     modos[m].h += +o.paradaH || 0;
@@ -615,14 +651,15 @@ function vistaReportes() {
         <td>${fNum(k.mttr)}</td><td>${fPct(k.disponibilidad, 1)}</td><td>${k.ots}</td><td>${fDinero(k.costo)}</td></tr>`), 'No hay activos.')}
   </section>
   <section class="rejilla2">
-    <div class="tarjeta"><h2>Pareto de modos de falla</h2>
-      ${tabla(['Modo de falla', 'Fallas', 'Parada (h)', '% acumulado'], pareto.map(([m, v]) => {
+    <div class="tarjeta"><h2>Pareto de fallas (ISO 14224)</h2>
+      <div class="filtros">${selFiltro('rep.eje', Object.entries(ejes), eje, 'Agrupar por')}</div>
+      ${tabla([ejes[eje], 'Fallas', 'Parada (h)', '% acumulado'], pareto.map(([m, v]) => {
         acumulado += v.h;
         const pct = totalH ? v.h / totalH : 0;
         return `<tr><td>${esc(m)}</td><td>${v.n}</td><td><div class="barra"><span style="width:${pct * 100}%"></span>${fNum(v.h)}</div></td>
           <td>${totalH ? fPct(acumulado / totalH) : '—'}</td></tr>`;
       }), 'No hay fallas cerradas en el periodo.')}
-      <p class="sub">Ordenado por horas de parada: los primeros modos suelen explicar ~80 % del problema.</p>
+      <p class="sub">Ordenado por horas de parada: las primeras filas suelen explicar ~80 % del problema.</p>
     </div>
     <div class="tarjeta"><h2>Costos por tipo de trabajo</h2>
       ${tabla(['Tipo', 'OT', 'Mano de obra', 'Repuestos', 'Otros', 'Total'], Object.entries(porTipo).sort((a, b) => b[1].total - a[1].total)
@@ -632,6 +669,7 @@ function vistaReportes() {
     </div>
   </section>
   <section class="tarjeta formulas"><h2>Cómo se calculan</h2>
+    <p class="sub">Definiciones alineadas con ISO 14224 (datos de falla y mantenimiento) y EN 15341 (indicadores de mantenimiento).</p>
     <dl>
       <dt>MTBF (tiempo medio entre fallas)</dt><dd>(tiempo planificado − tiempo de parada) ÷ nº de fallas. El tiempo planificado
         es días del periodo × horas de operación por día del activo.</dd>
@@ -660,32 +698,27 @@ function vistaDatos() {
       ${btn('editarConfig', 'Editar configuración')}
     </div>
     <div class="tarjeta"><h2>Copia de seguridad</h2>
-      <p>Guarda un archivo <code>.json</code> con todo (activos, órdenes, planes…). Sirve para pasar los datos a otro equipo
-      o para que el docente reparta el mismo escenario a todo el curso.</p>
+      <p>Guarda un archivo <code>.json</code> con todo (activos, órdenes, planes…). Sirve como respaldo y para pasar los
+      datos a otro equipo o navegador.</p>
       <div class="botones">${btn('exportarJSON', 'Exportar copia (.json)', '', 'prim')}
         <label class="boton">Importar copia… <input type="file" id="archivoImportar" accept=".json,application/json" hidden></label>
         ${btn('exportarCSV', 'Órdenes en CSV (Excel)')}</div>
     </div>
   </section>
-  <section class="rejilla2">
-    <div class="tarjeta"><h2>Escenario de práctica</h2>
-      <p>Reemplaza todo por la planta didáctica de ejemplo (equipos, historial de fallas, planes y repuestos).</p>
-      ${btn('cargarDemo', 'Cargar datos de ejemplo')}
-    </div>
-    <div class="tarjeta peligro-zona"><h2>Borrar todo</h2>
-      <p>Elimina todos los datos de este navegador. Exporta antes una copia si quieres conservarlos.</p>
-      ${btn('borrarTodo', 'Borrar todos los datos', '', 'peligro')}
-    </div>
+  <section class="tarjeta peligro-zona"><h2>Borrar todo</h2>
+    <p>Elimina todos los datos de este navegador. Exporta antes una copia si quieres conservarlos.</p>
+    ${btn('borrarTodo', 'Borrar todos los datos', '', 'peligro')}
   </section>`;
 }
 
 function vistaGuia() {
-  return `${cabecera('Guía y ejercicios', 'Cómo trabajar con MantenLibre y prácticas sugeridas para clase.')}
+  return `${cabecera('Guía y ejercicios', 'Cómo trabajar con MantenLibre, terminología normalizada y material de formación.')}
   <section class="tarjeta texto-largo">
     <h2>Flujo de trabajo</h2>
     <ol>
-      <li><strong>Ubicaciones y activos.</strong> Registra cada equipo con su criticidad (A, B, C), horas de operación por día y,
-        si tiene, su horómetro. Un activo puede formar parte de otro (motor → línea).</li>
+      <li><strong>Ubicaciones técnicas y activos.</strong> Registra la sede y sus áreas, y dentro de ellas cada equipo con su clase,
+        criticidad (A, B, C), horas de operación por día y, si tiene, su horómetro. Un activo puede formar parte de otro
+        (sistema → equipo → subunidad → ítem mantenible).</li>
       <li><strong>Planes preventivos.</strong> Define rutinas por calendario (cada N días, semanas o meses) o por uso (cada N horas
         de horómetro), con su lista de tareas. <em>Fecha fija</em> mantiene el calendario aunque se atrase una ejecución;
         <em>flotante</em> cuenta desde el último cierre.</li>
@@ -693,9 +726,32 @@ function vistaGuia() {
         preventivas que vencen dentro del horizonte configurado.</li>
       <li><strong>Solicitudes.</strong> Operadores reportan problemas; mantenimiento las aprueba y se convierten en órdenes correctivas.</li>
       <li><strong>Ejecución.</strong> En cada orden se marcan las tareas, se descuentan repuestos del inventario y se registran
-        horas de mano de obra. Al completarla se anotan el tiempo de parada, el modo de falla y la causa raíz.</li>
+        horas de mano de obra. Al completarla se registran la actividad, el tiempo de parada y, si hubo falla, sus datos ISO 14224.</li>
       <li><strong>Análisis.</strong> El panel y los reportes calculan MTBF, MTTR, disponibilidad, cumplimiento, backlog y costos.</li>
     </ol>
+  </section>
+  <section class="tarjeta texto-largo formulas">
+    <h2>Terminología (ISO 14224 y EN 13306)</h2>
+    <dl>
+      <dt>Tipos de mantenimiento</dt><dd><strong>Correctivo</strong> (después de la falla; <em>inmediato</em> o <em>diferido</em>)
+        y <strong>preventivo</strong> (antes de la falla): <em>predeterminado</em>, a intervalos fijos de tiempo o uso, o
+        <em>basado en condición</em>, según inspecciones o mediciones (el predictivo es una forma de este). Las
+        <em>modificaciones</em> cambian el diseño o la función del activo.</dd>
+      <dt>Taxonomía</dt><dd>Ubicación técnica (instalación y planta, niveles 3–4) → sistema (5) → unidad de equipo (6) →
+        subunidad (7) → ítem mantenible (8). Los indicadores se reportan normalmente a nivel de unidad de equipo.</dd>
+      <dt>Modo de falla</dt><dd>El efecto observado: lo que el operador ve (p. ej. «Fuga externa», «Vibración», «Falla al arrancar»).</dd>
+      <dt>Mecanismo de falla</dt><dd>El proceso físico, químico o de otro tipo que produjo la falla (p. ej. desgaste, corrosión, fatiga).</dd>
+      <dt>Causa de la falla</dt><dd>Por qué ocurrió: origen en el diseño, la fabricación o instalación, la operación o el mantenimiento, o la gestión.</dd>
+      <dt>Método de detección</dt><dd>Cómo se descubrió la falla: inspección, prueba funcional, monitoreo de condición, interferencia con la producción…</dd>
+      <dt>Severidad</dt><dd><em>Crítica</em> (pérdida inmediata de la función), <em>degradada</em> (función reducida) o
+        <em>incipiente</em> (sin efecto inmediato, pero empeorará si no se atiende).</dd>
+    </dl>
+  </section>
+  <section class="tarjeta">
+    <h2>Explorar con datos de ejemplo</h2>
+    <p>Carga una planta de envasado de ejemplo con equipos, historial de fallas, planes, repuestos y órdenes en curso.
+    <strong>Reemplaza todos los datos de este navegador</strong>: exporta antes una copia si tienes datos reales.</p>
+    ${btn('cargarDemo', 'Cargar datos de ejemplo')}
   </section>
   <section class="tarjeta texto-largo">
     <h2>Ejercicios con los datos de ejemplo</h2>
@@ -703,10 +759,10 @@ function vistaGuia() {
       <li>En <a href="#/panel">Panel</a>, identifica qué órdenes están vencidas y por qué el cumplimiento preventivo no es 100 %.</li>
       <li>El compresor CMP-01 marca 13 820 h. Registra una lectura de <strong>13 950 h</strong> en su ficha y observa qué orden
         se genera. ¿Hay stock del filtro necesario? ¿Qué harías?</li>
-      <li>Aprueba la solicitud de la llenadora, asígnala a Luis, registra 1,5 h de trabajo y ciérrala con 1 h de parada por
-        «Falla eléctrica». ¿Cómo cambian MTBF y MTTR de LL-01?</li>
-      <li>En <a href="#/reportes">Reportes</a>, usa el Pareto: ¿qué modo de falla causa más horas de parada? Propón un plan
-        preventivo que lo ataque y créalo.</li>
+      <li>Aprueba la solicitud de la llenadora, asígnala a Luis, registra 1,5 h de trabajo y ciérrala con 1 h de parada,
+        modo «Lectura anormal de instrumento (AIR)» y mecanismo «Eléctrico · Circuito abierto». ¿Cómo cambian MTBF y MTTR de LL-01?</li>
+      <li>En <a href="#/reportes">Reportes</a>, usa el Pareto agrupando por modo, mecanismo y causa: ¿qué explica más horas
+        de parada? Propón un plan preventivo que lo ataque y créalo.</li>
       <li>Calcula a mano la disponibilidad de la bomba BC-01 en 90 días y compárala con la de la aplicación.</li>
       <li>Cambia el plan de la llenadora de <em>flotante</em> a <em>fecha fija</em> y explica qué diferencia habría si una
         ejecución se atrasa 3 días.</li>
@@ -749,20 +805,20 @@ function practicaQuince() {
     ['R404A', 'Refrigerante R-404A', 'kg', '5', '2', 'S/ 90'],
   ];
   const ordenes = [
-    ['1', 'Plan', 'GE-01', 'Cambio de aceite y filtros', 'Cada 250 h · último servicio 1 000 h', 'Preventiva · 3 h · aceite ×3, FA-GE, FC-GE'],
+    ['1', 'Plan', 'GE-01', 'Cambio de aceite y filtros', 'Cada 250 h · último servicio 1 000 h', 'Preventivo predeterminado · 3 h · aceite ×3, FA-GE, FC-GE'],
     ['2', 'Plan', 'GE-01', 'Prueba en vacío del grupo electrógeno', 'Cada 1 semana', 'Inspección · 0,5 h'],
-    ['3', 'Plan', 'CMP-01', 'Cambio de aceite del compresor', 'Cada 500 h · último servicio 3 000 h', 'Preventiva · 1 h · AC-CMP ×2'],
-    ['4', 'Plan', 'CMP-01', 'Purga del tanque y revisión de fajas', 'Cada 2 semanas', 'Preventiva · 0,5 h'],
+    ['3', 'Plan', 'CMP-01', 'Cambio de aceite del compresor', 'Cada 500 h · último servicio 3 000 h', 'Preventivo predeterminado · 1 h · AC-CMP ×2'],
+    ['4', 'Plan', 'CMP-01', 'Purga del tanque y revisión de fajas', 'Cada 2 semanas', 'Preventivo predeterminado · 0,5 h'],
     ['5', 'Plan', 'BOM-01', 'Inspección de bomba (vibración, ruido, sello, presión)', 'Cada 1 mes', 'Inspección · 1 h'],
-    ['6', 'Plan', 'TE-01', 'Termografía y reajuste de bornes', 'Cada 3 meses', 'Predictiva · 2 h · electricista'],
-    ['7', 'Plan', 'CF-01', 'Limpieza de condensador y evaporador', 'Cada 1 mes', 'Preventiva · 2 h · LS-1 ×1'],
-    ['8', 'Plan', 'FT-01', 'Lubricación de chumaceras y revisión de faja', 'Cada 2 semanas', 'Preventiva · 0,5 h · GR-EP2 ×0,2'],
-    ['9', 'Plan', 'MON-01', 'Servicio de 250 h del montacargas', 'Cada 250 h · último servicio 5 600 h', 'Preventiva · 2 h · FA-MON, aceite ×1'],
-    ['10', 'Plan', 'AA-01', 'Limpieza de filtros del split', 'Cada 1 mes', 'Preventiva · 0,5 h'],
-    ['11', 'Solicitud', 'CF-01', '«La cámara no baja de −10 °C»', 'Urgencia alta', 'Correctiva · revisar carga de R-404A'],
-    ['12', 'Solicitud', 'FT-01', '«La faja se desvía hacia un lado»', 'Urgencia media', 'Correctiva · alineación'],
-    ['13', 'Solicitud', 'BOM-01', '«Gotea agua por el sello de la bomba»', 'Urgencia media', 'Correctiva · SM-1 ×1'],
-    ['14', 'Manual', 'BOM-01', 'Instalar guarda de protección en el acople', 'Fecha límite: en 3 semanas', 'Mejora · 3 h'],
+    ['6', 'Plan', 'TE-01', 'Termografía y reajuste de bornes', 'Cada 3 meses', 'Basado en condición · 2 h · electricista'],
+    ['7', 'Plan', 'CF-01', 'Limpieza de condensador y evaporador', 'Cada 1 mes', 'Preventivo predeterminado · 2 h · LS-1 ×1'],
+    ['8', 'Plan', 'FT-01', 'Lubricación de chumaceras y revisión de faja', 'Cada 2 semanas', 'Preventivo predeterminado · 0,5 h · GR-EP2 ×0,2'],
+    ['9', 'Plan', 'MON-01', 'Servicio de 250 h del montacargas', 'Cada 250 h · último servicio 5 600 h', 'Preventivo predeterminado · 2 h · FA-MON, aceite ×1'],
+    ['10', 'Plan', 'AA-01', 'Limpieza de filtros del split', 'Cada 1 mes', 'Preventivo predeterminado · 0,5 h'],
+    ['11', 'Solicitud', 'CF-01', '«La cámara no baja de −10 °C»', 'Urgencia alta', 'Correctivo · revisar carga de R-404A'],
+    ['12', 'Solicitud', 'FT-01', '«La faja se desvía hacia un lado»', 'Urgencia media', 'Correctivo · alineación'],
+    ['13', 'Solicitud', 'BOM-01', '«Gotea agua por el sello de la bomba»', 'Urgencia media', 'Correctivo · SM-1 ×1'],
+    ['14', 'Manual', 'BOM-01', 'Instalar guarda de protección en el acople', 'Fecha límite: en 3 semanas', 'Modificación · 3 h'],
     ['15', 'Manual', 'TE-01', 'Medición de resistencia de puesta a tierra', 'Fecha límite: fin de mes', 'Inspección · 1 h · electricista'],
   ];
   return `<section class="tarjeta texto-largo">
@@ -781,7 +837,7 @@ function practicaQuince() {
         Luego analiza el panel y los reportes.</li>
     </ol>
     <h3>Activos</h3>
-    ${tabla(['Código', 'Nombre', 'Ubicación', 'Criticidad', 'Horas/día', 'Horómetro'], filas(activos))}
+    ${tabla(['Código', 'Nombre', 'Ubicación técnica', 'Criticidad', 'Horas/día', 'Horómetro'], filas(activos))}
     <h3>Personal</h3>
     ${tabla(['Nombre (inventado)', 'Especialidad', 'Costo/h'], filas(personal))}
     <h3>Repuestos</h3>

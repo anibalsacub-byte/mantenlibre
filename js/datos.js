@@ -2,17 +2,77 @@
 
 const CLAVE = 'mantenlibre:v1';
 
-const TIPOS = { correctiva: 'Correctiva', preventiva: 'Preventiva', predictiva: 'Predictiva', inspeccion: 'Inspección', mejora: 'Mejora' };
+// Categorías de mantenimiento según EN 13306 / ISO 14224. Las claves internas se conservan por compatibilidad.
+const TIPOS = {
+  correctiva: 'Correctivo',
+  preventiva: 'Preventivo predeterminado',
+  predictiva: 'Preventivo basado en condición',
+  inspeccion: 'Inspección / prueba funcional',
+  mejora: 'Modificación / mejora',
+};
+const TIPOS_CORTOS = { correctiva: 'Correctivo', preventiva: 'Preventivo', predictiva: 'Por condición', inspeccion: 'Inspección', mejora: 'Modificación' };
+const MODALIDAD_CORRECTIVO = { inmediato: 'Inmediato (se atiende sin demora)', diferido: 'Diferido (se programa después)' };
 const PRIORIDADES = { baja: 'Baja', media: 'Media', alta: 'Alta', urgente: 'Urgente' };
 const ESTADOS = { abierta: 'Abierta', progreso: 'En progreso', espera: 'En espera', completada: 'Completada', cancelada: 'Cancelada' };
 const CRITICIDAD = { A: 'A · Crítico', B: 'B · Importante', C: 'C · Secundario' };
 const ESTADOS_ACTIVO = { operativo: 'Operativo', parado: 'Fuera de servicio', baja: 'Dado de baja' };
 const UNIDADES = { dias: 'días', semanas: 'semanas', meses: 'meses' };
-const MODOS_FALLA = [
-  'Desgaste', 'Lubricación deficiente', 'Desalineación / desbalanceo', 'Sobrecarga', 'Falla eléctrica',
-  'Contaminación / suciedad', 'Corrosión', 'Fatiga', 'Error de operación', 'Falla de diseño', 'Otro',
+
+// Taxonomía ISO 14224: las ubicaciones técnicas cubren los niveles 3–4 y los activos los niveles 5–8.
+const NIVELES = {
+  sistema: 'Sistema / sección (nivel 5)',
+  equipo: 'Unidad de equipo (nivel 6)',
+  subunidad: 'Subunidad (nivel 7)',
+  item: 'Ítem mantenible (nivel 8)',
+};
+const CLASES_EQUIPO = [
+  'Bombas', 'Compresores', 'Ventiladores y sopladores', 'Motores eléctricos', 'Motores de combustión',
+  'Generadores eléctricos', 'Turbinas', 'Intercambiadores de calor', 'Calderas y hornos', 'Recipientes a presión y tanques',
+  'Tuberías', 'Válvulas', 'Filtros y separadores', 'Transportadores y elevadores', 'Grúas y equipos de izaje',
+  'Transformadores', 'Tableros y celdas eléctricas', 'Variadores de frecuencia', 'Sistemas UPS', 'Instrumentación',
+  'Sistemas de control (PLC)', 'Detección y extinción de incendios', 'Climatización y refrigeración (HVAC)',
+  'Vehículos y montacargas', 'Máquinas de producción', 'Edificios e infraestructura', 'Otra',
 ];
-const TIPOS_PLANIFICADOS = ['preventiva', 'predictiva', 'inspeccion'];
+
+// Datos de falla y mantenimiento según ISO 14224, Anexo B (modo, mecanismo, causa, detección, actividad).
+const MODOS_FALLA = [
+  'Falla al arrancar a demanda (FTS)', 'Falla al parar a demanda (STP)', 'Parada espuria / inesperada (UST)',
+  'Avería / rotura (BRD)', 'Fuga externa de fluido de proceso (ELP)', 'Fuga externa de fluido auxiliar (ELU)',
+  'Fuga interna (INL)', 'Vibración (VIB)', 'Ruido (NOI)', 'Sobrecalentamiento (OHE)', 'Rendimiento bajo (LOO)',
+  'Rendimiento alto (HIO)', 'Salida errática (ERO)', 'Desviación de parámetro (PDE)', 'Lectura anormal de instrumento (AIR)',
+  'Obstrucción / taponamiento (PLU)', 'Deficiencia estructural (STD)', 'Problemas menores en servicio (SER)',
+  'Otro (OTH)', 'Desconocido (UNK)',
+];
+const agrupar = (grupos) => Object.entries(grupos).flatMap(([g, items]) => items.map((i) => `${g} · ${i}`));
+const MECANISMOS = agrupar({
+  'Mecánico': ['Fuga', 'Vibración', 'Holgura / desalineación', 'Deformación', 'Aflojamiento', 'Atascamiento / agarrotamiento'],
+  'Material': ['Cavitación', 'Corrosión', 'Erosión', 'Desgaste', 'Rotura', 'Fatiga', 'Sobrecalentamiento', 'Estallido'],
+  'Instrumentación': ['Falla de control', 'Sin señal / indicación / alarma', 'Señal / indicación errónea', 'Fuera de ajuste', 'Falla de software'],
+  'Eléctrico': ['Cortocircuito', 'Circuito abierto', 'Sin energía / tensión', 'Energía / tensión defectuosa', 'Falla a tierra / aislamiento'],
+  'Influencia externa': ['Bloqueo / obstrucción', 'Contaminación', 'Otra influencia externa'],
+  'Varios': ['Sin causa encontrada', 'Causas combinadas', 'Otro', 'Desconocido'],
+});
+const CAUSAS = agrupar({
+  'Diseño': ['Capacidad inadecuada', 'Material inadecuado'],
+  'Fabricación / instalación': ['Error de fabricación', 'Error de instalación'],
+  'Operación / mantenimiento': ['Servicio fuera de diseño', 'Error de operación', 'Error de mantenimiento', 'Desgaste esperado'],
+  'Gestión': ['Error de documentación', 'Error de gestión'],
+  'Varios': ['Sin causa encontrada', 'Causa común', 'Falla en cascada de otro equipo', 'Otra', 'Desconocida'],
+});
+const DETECCION = [
+  'Mantenimiento periódico', 'Prueba funcional', 'Inspección', 'Monitoreo de condición periódico',
+  'Monitoreo de condición continuo', 'Interferencia con la producción', 'Observación casual',
+  'Durante un mantenimiento correctivo', 'A demanda', 'Otro',
+];
+const ACTIVIDADES = [
+  'Reemplazar', 'Reparar', 'Modificar', 'Ajustar', 'Reacondicionar', 'Verificar', 'Servicio (lubricar, limpiar)',
+  'Prueba', 'Inspección', 'Revisión general (overhaul)', 'Combinación', 'Otra',
+];
+const SEVERIDAD = {
+  critica: 'Crítica — pérdida inmediata de la función',
+  degradada: 'Degradada — función reducida',
+  incipiente: 'Incipiente — sin efecto inmediato',
+};
 
 let state;
 
@@ -30,7 +90,14 @@ function normalizar(s) {
   for (const k of Object.keys(base)) if (s[k] == null) s[k] = base[k];
   s.config = { ...base.config, ...s.config };
   s.seq = { ...base.seq, ...s.seq };
-  for (const o of s.ordenes) o.historial ||= [];
+  for (const o of s.ordenes) {
+    o.historial ||= [];
+    // Versiones anteriores guardaban el mecanismo (p. ej. «Desgaste») en el campo del modo de falla.
+    if (o.modoFalla && !MODOS_FALLA.includes(o.modoFalla) && !o.mecanismo) {
+      o.mecanismo = o.modoFalla;
+      o.modoFalla = '';
+    }
+  }
   return s;
 }
 
@@ -71,7 +138,7 @@ function crearOT(datos) {
     num: 'OT-' + String(state.seq.ot).padStart(4, '0'),
     titulo: '', descripcion: '', tipo: 'correctiva', prioridad: 'media', estado: 'abierta',
     activoId: '', asignadoId: '', creada: hoy(), fechaLimite: '', cerrada: '', estimadoH: null,
-    checklist: [], repuestos: [], mano: [], otrosCostos: 0, paradaH: null, modoFalla: '', causa: '',
+    checklist: [], repuestos: [], mano: [], otrosCostos: 0, paradaH: null, modoFalla: '', mecanismo: '', causaCat: '', deteccion: '', actividad: '', severidad: '', modalidad: '', causa: '',
     notas: '', planId: '', solicitudId: '', lecturaCierre: null, inicioReal: '', finReal: '', motivoEspera: '',
     historial: [],
     ...datos,

@@ -190,10 +190,23 @@ textarea { resize: vertical; }
 .checklist input { width: 18px; height: 18px; accent-color: var(--acento); }
 .checklist input:checked + span { text-decoration: line-through; color: var(--texto-2); }
 
-/* ---------- Bienvenida ---------- */
-.bienvenida .opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1rem 0; }
-.bienvenida .opciones > div { border: 1px solid var(--borde); border-radius: var(--radio); padding: 1rem; background: var(--superficie-2); }
-.bienvenida h3 { margin-top: 0; }
+/* ---------- Puesta en marcha ---------- */
+.puesta-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.puesta-cab .sub { margin: -.4rem 0 .75rem; }
+.pasos { list-style: none; margin: .5rem 0 0; padding: 0; }
+.pasos li { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--borde); }
+.pasos li:last-child { border-bottom: 0; }
+.pasos li > div { flex: 1; min-width: 0; }
+.pasos strong { display: block; font-size: .92rem; }
+.pasos small { color: var(--texto-2); font-size: .82rem; }
+.marca-paso {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--borde); display: grid; place-items: center;
+  font-size: .8rem; font-weight: 700; color: #fff;
+}
+.pasos li.hecho .marca-paso { background: var(--bien); border-color: var(--bien); }
+.pasos li.hecho strong { color: var(--texto-2); text-decoration: line-through; }
+.pasos li.actual .marca-paso { border-color: var(--acento); }
+.pasos li.actual strong { color: var(--acento); }
 .peligro-zona { border-color: var(--mal-suave); }
 
 /* ---------- Calendario ---------- */
@@ -330,6 +343,8 @@ a.boton { color: var(--texto); text-decoration: none; }
   .dia .num { width: 100%; }
   .dia.hoy .num { width: auto; margin-right: 100%; }
   .agenda li { grid-template-columns: 1fr; gap: .1rem; }
+  .pasos li { flex-wrap: wrap; }
+  .pasos li button { margin-left: calc(24px + .75rem); }
   .filtro select, .filtro.buscar { max-width: none; }
   .filtro { flex: 1 1 140px; }
 }
