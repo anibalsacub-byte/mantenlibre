@@ -708,6 +708,14 @@ function vistaDatos() {
   <section class="tarjeta peligro-zona"><h2>Borrar todo</h2>
     <p>Elimina todos los datos de este navegador. Exporta antes una copia si quieres conservarlos.</p>
     ${btn('borrarTodo', 'Borrar todos los datos', '', 'peligro')}
+  </section>
+  <section class="tarjeta"><h2>Acerca de MantenLibre</h2>
+    <p>© 2026 Ricardo Anibal Sánchez Cuba.</p>
+    <p>Software libre publicado con
+    <a href="https://github.com/anibalsacub-byte/mantenlibre/blob/main/LICENSE" target="_blank" rel="noopener">licencia MIT</a>:
+    puede usarse, copiarse, modificarse y distribuirse libremente, también con fines comerciales, manteniendo este aviso
+    de autoría y de licencia. Código fuente en
+    <a href="https://github.com/anibalsacub-byte/mantenlibre" target="_blank" rel="noopener">GitHub</a>.</p>
   </section>`;
 }
 

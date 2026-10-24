@@ -52,6 +52,9 @@ code { background: var(--superficie-2); padding: 0 .3em; border-radius: 4px; }
 .marca svg path { fill: #fff; }
 .marca strong { color: var(--texto); display: block; font-size: 1.05rem; }
 .marca small { display: block; font-size: .78rem; opacity: .75; }
+.marca .inicio { display: flex; align-items: center; gap: .6rem; color: inherit; min-width: 0; border-radius: 8px; }
+.marca .inicio:hover { text-decoration: none; }
+.marca .inicio:hover strong { color: var(--acento); }
 #botonMenu { display: none; margin-left: auto; background: transparent; color: var(--texto); border: 0; font-size: 1.4rem; }
 #menu { display: flex; flex-direction: column; gap: 2px; }
 #menu a {
@@ -64,7 +67,8 @@ code { background: var(--superficie-2); padding: 0 .3em; border-radius: 4px; }
 .cnt:empty { display: none; }
 .cnt { background: var(--info-suave); color: var(--info); font-size: .72rem; border-radius: 99px; padding: 0 .45rem; }
 .cnt.mal { background: var(--mal); color: #fff; }
-.pie { margin-top: auto; font-size: .75rem; opacity: .5; padding: 1rem .75rem 0; }
+.pie { margin: auto 0 0; font-size: .75rem; line-height: 1.6; color: var(--texto-2); padding: 1rem .75rem 0; }
+.pie a { color: inherit; text-decoration: underline; }
 
 main { padding: 1.5rem 2rem 3rem; min-width: 0; max-width: 1400px; }
 .cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
@@ -321,7 +325,8 @@ a.boton { color: var(--texto); text-decoration: none; }
   .marca { padding: .25rem 0; }
   #botonMenu { display: block; }
   #menu, .pie { display: none; }
-  body.menu-abierto #menu { display: flex; padding-bottom: .75rem; max-height: 75vh; overflow-y: auto; }
+  body.menu-abierto #menu { display: flex; padding-bottom: .75rem; max-height: 70vh; overflow-y: auto; }
+  body.menu-abierto .pie { display: block; padding: .5rem .75rem .75rem; border-top: 1px solid var(--borde); }
   main { padding: 1rem 16px 3rem; }
   .rejilla2 { grid-template-columns: 1fr; }
   .tablero { grid-template-columns: 1fr; overflow: visible; }

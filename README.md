@@ -59,4 +59,7 @@ y [Maintenance_App](https://github.com/pomochieng/Maintenance_App). MantenLibre 
 
 ## Licencia
 
-[MIT](LICENSE): úsala, cópiala, modifícala y compártela libremente, también con fines comerciales.
+© 2026 Ricardo Anibal Sánchez Cuba.
+
+Publicado con licencia [MIT](LICENSE): úsala, cópiala, modifícala y compártela libremente, también con fines
+comerciales, manteniendo el aviso de autoría y de licencia.

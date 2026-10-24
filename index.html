@@ -13,8 +13,10 @@
   <div class="app">
     <aside class="lateral">
       <div class="marca">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6"/><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1l-4 4a1.4 1.4 0 0 0 2 2l4-4a4 4 0 0 0 5.1-5.4l-2.2 2.2-1.9-.5-.5-1.9z"/></svg>
-        <div><strong>MantenLibre</strong><small id="nombreEmpresa"></small></div>
+        <a class="inicio" href="#/panel" title="Ir al inicio">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6"/><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1l-4 4a1.4 1.4 0 0 0 2 2l4-4a4 4 0 0 0 5.1-5.4l-2.2 2.2-1.9-.5-.5-1.9z"/></svg>
+          <div><strong>MantenLibre</strong><small id="nombreEmpresa"></small></div>
+        </a>
         <button type="button" id="botonMenu" aria-label="Abrir menú">☰</button>
       </div>
       <nav id="menu">
@@ -34,7 +36,9 @@
         <a href="#/datos" data-ruta="datos">Datos y configuración</a>
         <a href="#/guia" data-ruta="guia">Guía y ejercicios</a>
       </nav>
-      <p class="pie">Software libre · datos solo en este navegador</p>
+      <p class="pie">© 2026 Ricardo Anibal Sánchez Cuba<br>
+        Software libre · <a href="https://github.com/anibalsacub-byte/mantenlibre/blob/main/LICENSE" target="_blank" rel="noopener">licencia MIT</a><br>
+        Los datos se guardan solo en este navegador</p>
     </aside>
     <main id="vista"></main>
   </div>
